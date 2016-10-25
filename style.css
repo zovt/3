@@ -1,0 +1,17 @@
+@import url('https://fonts.googleapis.com/css?family=Space+Mono');
+
+*, html {
+	box-sizing: border-box;
+}
+
+body {
+	font-family: 'Space Mono';
+	font-size: 2rem;
+	color: #555;
+}
+
+@media (max-width: 50em) {
+	body {
+		font-size: 1.5rem;
+	}
+}
