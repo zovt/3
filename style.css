@@ -10,6 +10,10 @@ body {
 	color: #555;
 }
 
+.disclaimer {
+	font-size: 1rem;
+}
+
 @media (max-width: 50em) {
 	body {
 		font-size: 1.5rem;
