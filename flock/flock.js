@@ -1,19 +1,34 @@
 /* global THREE */
 
 class Flocker {
-	constructor(x, y, z) {
-		this.createMesh(x, y, z);
+	constructor(x, y, z, color) {
+		this.createMesh(x, y, z, color);
 
 		this.vector = {
 			x: 0.0,
 			y: 0.0,
 		};
+
+		this.lastKnownMousePosition = {
+			x: 0.0,
+			y: 0.0,
+		};
+
+		this.mouseVector = {
+			x: 0.0,
+			y: 0.0,
+		};
+
+		this.displacementVector = {
+			x: 0.0,
+			y: 0.0,
+		};
 	}
 
-	createMesh(x, y, z) {
+	createMesh(x, y, z, color) {
 		const geometry = new THREE.CircleGeometry(Flocker.SIZE,
 				Flocker.MESH_DIVISIONS);
-		const material = new THREE.MeshBasicMaterial({ color: 0xFF00FF });
+		const material = new THREE.MeshBasicMaterial({ color });
 		const circle = new THREE.Mesh(geometry, material);
 
 		circle.position.set(x, y, z);
@@ -21,11 +36,15 @@ class Flocker {
 		this.mesh = circle;
 	}
 
-	updateVector(mousePosition) {
+	setMousePosition(mousePosition) {
+		this.lastKnownMousePosition = mousePosition;
+	}
+
+	updateMouseVector() {
 		const meshPos = { x: this.mesh.position.x, y: this.mesh.position.y };
 		const v = { 
-			x: mousePosition.x - meshPos.x, 
-			y: mousePosition.y + meshPos.y,
+			x: this.lastKnownMousePosition.x - meshPos.x, 
+			y: this.lastKnownMousePosition.y + meshPos.y,
 		};
 
 		const vLen = Math.sqrt(Math.pow(v.x, 2) + Math.pow(v.y, 2));
@@ -35,13 +54,33 @@ class Flocker {
 			y: v.y / vLen || 0,
 		};
 
-		this.vector = u;
-		console.log(this.vector);
+		this.mouseVector = u;
+	}
+
+	updateDisplacementVector() {
+		this.displacementVector.x += this.mouseVector.x;
+		this.displacementVector.y += this.mouseVector.y;
+
+		const mag = Math.sqrt(Math.pow(this.displacementVector.x, 2) 
+				+ Math.pow(this.displacementVector.y, 2));
+
+		this.displacementVector.x = 
+			Math.sign(this.displacementVector.x) * 
+			Math.min(Math.abs(this.displacementVector.x), Flocker.MAX_SPEED);
+		this.displacementVector.y =
+			Math.sign(this.displacementVector.y) *
+			Math.min(Math.abs(this.displacementVector.y), Flocker.MAX_SPEED);
+	}
+
+	updatePosition() {
+		this.mesh.position.x += this.displacementVector.x;
+		this.mesh.position.y -= this.displacementVector.y;
 	}
 
 	update() {
-		this.mesh.position.x += this.vector.x;
-		this.mesh.position.y -= this.vector.y;
+		this.updateMouseVector();
+		this.updateDisplacementVector();
+		this.updatePosition();
 	}
 
 	static genX(num) {
@@ -49,7 +88,11 @@ class Flocker {
 		const res = [];
 
 		for (let i = 0; i < num; i++) {
-			res.push(new Flocker(i * Flocker.SIZE + padding, 0, 0));
+			res.push(new Flocker(Math.random() * window.innerWidth, 
+						-Math.random() * window.innerHeight, 0,
+						Math.random() * Math.pow(256, 3) 
+						+ Math.random() * Math.pow(256, 2)
+						+ Math.random() * 256));
 		}
 
 		return res;
@@ -57,18 +100,31 @@ class Flocker {
 }
 Flocker.SIZE = 20;
 Flocker.MESH_DIVISIONS = 20;
+Flocker.MAX_SPEED = 13;
 
 class FlockerGroup {
 	constructor(num) {
 		this.flockers = Flocker.genX(num);
 		this.updateFlockerVectors = this.updateFlockerVectors.bind(this);
+		this.updateFlockerVectorsTouch = 
+			this.updateFlockerVectorsTouch.bind(this);
 	}
 
 	updateFlockerVectors(event) {
 		this.flockers.forEach(flocker => {
-			flocker.updateVector({ x: event.clientX, y: event.clientY });
+			flocker.setMousePosition({ x: event.clientX, y: event.clientY });
 		});
 	}
+
+	updateFlockerVectorsTouch(event) {
+		this.flockers.forEach(flocker => {
+			flocker.setMousePosition({
+				x: event.targetTouches[0].clientX,
+				y: event.targetTouches[0].clientY,
+			});
+		});
+	}
+
 
 	addToScene(scene) {
 		this.flockers.forEach(flocker => {
@@ -82,6 +138,7 @@ class FlockerGroup {
 
 	registerCallbacks() {
 		document.addEventListener('mousemove', this.updateFlockerVectors);
+		document.addEventListener('touchmove', this.updateFlockerVectorsTouch);
 	}
 }
 
@@ -103,7 +160,7 @@ class FlockMain {
 	}
 
 	createFlockerGroup() {
-		this.flockerGroup = new FlockerGroup(10);
+		this.flockerGroup = new FlockerGroup(20);
 		this.flockerGroup.addToScene(this.scene);
 	}
 
