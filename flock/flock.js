@@ -61,9 +61,6 @@ class Flocker {
 		this.displacementVector.x += this.mouseVector.x;
 		this.displacementVector.y += this.mouseVector.y;
 
-		const mag = Math.sqrt(Math.pow(this.displacementVector.x, 2) 
-				+ Math.pow(this.displacementVector.y, 2));
-
 		this.displacementVector.x = 
 			Math.sign(this.displacementVector.x) * 
 			Math.min(Math.abs(this.displacementVector.x), Flocker.MAX_SPEED);
