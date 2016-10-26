@@ -4,17 +4,20 @@ class Flocker {
 	}
 
 	createMesh(x, y, z) {
-		const geometry = new THREE.SphereGeometry(Flocker.SIZE, 20, 20);
+		const geometry = new THREE.CircleGeometry(Flocker.SIZE, 20);
 		const material = new THREE.MeshBasicMaterial({ color:  0xFF00FF });
-		const sphere = new THREE.Mesh(geometry, material);
+		const circle = new THREE.Mesh(geometry, material);
 
-		sphere.position.set(x, y, z);
+		circle.position.set(x, y, z);
 
-		return sphere;
+		return circle;
 	}
 
 	flock(mousePosition) {
-		this.mesh.position.set(mousePosition.x, -mousePosition.y, 0);
+	}
+
+	update() {
+
 	}
 
 	static genX(num) {
