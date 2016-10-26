@@ -4,9 +4,9 @@ class Flocker {
 	constructor(x, y, z, color) {
 		this.createMesh(x, y, z, color);
 
-		this.vector = {
-			x: 0.0,
-			y: 0.0,
+		this.position = {
+			x: this.mesh.position.x,
+			y: -this.mesh.position.y,
 		};
 
 		this.lastKnownMousePosition = {
@@ -70,8 +70,15 @@ class Flocker {
 	}
 
 	updatePosition() {
-		this.mesh.position.x += this.displacementVector.x;
-		this.mesh.position.y -= this.displacementVector.y;
+		this.position.x += this.displacementVector.x;
+		this.position.y += this.displacementVector.y;
+
+		this.project();
+	}
+
+	project() {
+		this.mesh.position.x = this.position.x;
+		this.mesh.position.y = -this.position.y;
 	}
 
 	update() {
