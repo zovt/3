@@ -179,7 +179,7 @@ class FlockMain {
 
 	updateRenderer() {
 		if (this.renderer === undefined) {
-			this.renderer = new THREE.WebGLRenderer();
+			this.renderer = new THREE.WebGLRenderer({ antialias: true });
 		}
 
 		this.renderer.setSize(window.innerWidth, window.innerHeight);
