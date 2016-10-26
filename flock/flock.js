@@ -1,23 +1,47 @@
+/* global THREE */
+
 class Flocker {
 	constructor(x, y, z) {
-		this.mesh = this.createMesh(x, y, z);
+		this.createMesh(x, y, z);
+
+		this.vector = {
+			x: 0.0,
+			y: 0.0,
+		};
 	}
 
 	createMesh(x, y, z) {
-		const geometry = new THREE.CircleGeometry(Flocker.SIZE, 20);
-		const material = new THREE.MeshBasicMaterial({ color:  0xFF00FF });
+		const geometry = new THREE.CircleGeometry(Flocker.SIZE,
+				Flocker.MESH_DIVISIONS);
+		const material = new THREE.MeshBasicMaterial({ color: 0xFF00FF });
 		const circle = new THREE.Mesh(geometry, material);
 
 		circle.position.set(x, y, z);
 
-		return circle;
+		this.mesh = circle;
 	}
 
-	flock(mousePosition) {
+	updateVector(mousePosition) {
+		const meshPos = { x: this.mesh.position.x, y: this.mesh.position.y };
+		const v = { 
+			x: mousePosition.x - meshPos.x, 
+			y: mousePosition.y + meshPos.y,
+		};
+
+		const vLen = Math.sqrt(Math.pow(v.x, 2) + Math.pow(v.y, 2));
+
+		const u = {
+			x: v.x / vLen || 0,
+			y: v.y / vLen || 0,
+		};
+
+		this.vector = u;
+		console.log(this.vector);
 	}
 
 	update() {
-
+		this.mesh.position.x += this.vector.x;
+		this.mesh.position.y -= this.vector.y;
 	}
 
 	static genX(num) {
@@ -32,20 +56,18 @@ class Flocker {
 	}
 }
 Flocker.SIZE = 20;
+Flocker.MESH_DIVISIONS = 20;
 
 class FlockerGroup {
 	constructor(num) {
 		this.flockers = Flocker.genX(num);
-		this.mousePosition = { x: 0, y: 0 };
-
-		this.setMousePosition = this.setMousePosition.bind(this);
+		this.updateFlockerVectors = this.updateFlockerVectors.bind(this);
 	}
 
-	setMousePosition(event) {
-		this.mousePosition = {
-			x: event.clientX,
-			y: event.clientY,
-		};
+	updateFlockerVectors(event) {
+		this.flockers.forEach(flocker => {
+			flocker.updateVector({ x: event.clientX, y: event.clientY });
+		});
 	}
 
 	addToScene(scene) {
@@ -54,55 +76,79 @@ class FlockerGroup {
 		});
 	}
 
-	tick() {
-		this.flockers.forEach(flocker => flocker.flock(this.mousePosition));
+	update() {
+		this.flockers.forEach(flocker => flocker.update());
 	}
 
 	registerCallbacks() {
-		document.onmousemove = this.setMousePosition;
+		document.addEventListener('mousemove', this.updateFlockerVectors);
 	}
 }
 
-function setRendererSize(renderer) {
-	renderer.setSize(window.innerWidth, window.innerHeight);
-}
+class FlockMain {
+	constructor() {
+		this.updateRenderer();
+		this.updateCamera();
+		
+		this.scene = new THREE.Scene();
 
-function updateCamera() {
-	camera = new THREE.OrthographicCamera(window.innerWidth / -2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / -2, 1, 1000);
-	camera.position.z = 500;
-	camera.position.x = window.innerWidth / 2;
-	camera.position.y = -window.innerHeight / 2;
-}
+		this.createFlockerGroup();
 
-function render() {
-	renderer.render(scene, camera);
-}
-
-function loop(flockerGroup) {
-	requestAnimationFrame(loop.bind(undefined, flockerGroup));
-	render();
-	flockerGroup.tick();
-}
-
-let camera, scene, renderer;
-
-function main() {
-	scene = new THREE.Scene();
-	renderer = new THREE.WebGLRenderer();
-	setRendererSize(renderer);
-	updateCamera();
-
-	document.getElementById('main').appendChild(renderer.domElement);
-
-	window.onresize = () => {
-		setRendererSize(renderer);
-		updateCamera();
+		this.loop = this.loop.bind(this);
 	}
 
-	const flockerGroup = new FlockerGroup(10);
-	flockerGroup.registerCallbacks();
-	flockerGroup.addToScene(scene);
-	loop(flockerGroup);
+	init() {
+		document.getElementById('main').appendChild(this.renderer.domElement);
+		this.registerCallbacks();
+	}
+
+	createFlockerGroup() {
+		this.flockerGroup = new FlockerGroup(10);
+		this.flockerGroup.addToScene(this.scene);
+	}
+
+	registerCallbacks() {
+		this.flockerGroup.registerCallbacks();
+
+		window.addEventListener('resize', () => {
+			this.updateRenderer();
+			this.updateCamera();
+		});
+	}
+
+	updateRenderer() {
+		if (this.renderer === undefined) {
+			this.renderer = new THREE.WebGLRenderer();
+		}
+
+		this.renderer.setSize(window.innerWidth, window.innerHeight);
+	}
+
+	updateCamera() {
+		this.camera = new THREE.OrthographicCamera(window.innerWidth / -2, 
+				window.innerWidth / 2, window.innerHeight / 2, 
+				window.innerHeight / -2, 1, 1000);
+
+		this.camera.position.z = 500;
+		this.camera.position.x = window.innerWidth / 2;
+		this.camera.position.y = -window.innerHeight / 2;
+	}
+
+	render() {
+		this.renderer.render(this.scene, this.camera);
+	}
+
+	update() {
+		this.flockerGroup.update();
+	}
+
+	loop() {
+		requestAnimationFrame(this.loop);
+		this.update();
+		this.render();
+	}
 }
 
-main();
+const main = new FlockMain();
+main.init();
+main.loop();
